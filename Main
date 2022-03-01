@@ -1,0 +1,104 @@
+import pygame
+import random
+
+ttl = "Arcanoid :)"
+
+width, height = 1000, 800
+# цвета кубиков для рандомной генерации
+colors = ["red", "green", "blue", "yellow", "white", "darkorange", "darkgreen", "darkblue", "lightblue", "lightgreen",
+          "orange", "purple", "pink", "grey", "cyan", "magenta"]
+
+# кубики сверху
+block_width = 70
+block_height = 40
+
+# цвета и координаты кубиков
+blocks = [pygame.Rect(10 + 97 * i, 50 + 50 * j, 100, 48) for i in range(10) for j in range(4)]
+colorz = [colors[random.randint(0, 14)] for i in range(10) for j in range(4)]
+
+# палка
+stick_width = 200
+stick_hight = 20
+stick_speed = 1
+stick = pygame.Rect(width // 2, height - stick_hight - 100, stick_width, stick_hight)
+
+# параметры и координаты шарика
+ball_radius = 16
+ball_body = int(ball_radius * 2)
+ball_speed = 1
+ball = pygame.Rect(ball_body, height // 2, ball_body, ball_body)
+x, y = 1, -1
+
+
+# трекинг столкновения
+def collise(x, y, ball, rect):
+    if x > 0:
+        dx = ball.right - rect.left
+    else:
+        dx = rect.right - ball.left
+
+    if y > 0:
+        dy = ball.bottom - rect.top
+    else:
+        dy = rect.bottom - ball.top
+
+    if dx > dy:
+        y = -y
+    elif dy > dx:
+        x = -x
+    return x, y
+
+
+# создание экрана
+pygame.init()
+screen = pygame.display.set_mode((width, height))
+img = pygame.image.load('1.jpg').convert()
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit()
+    screen.blit(img, (0, 0))
+
+    # управление палкой
+    key = pygame.key.get_pressed()
+    if key[pygame.K_RIGHT] and stick.right < width:
+        stick.right += stick_speed
+    if key[pygame.K_LEFT] and stick.left > 0:
+        stick.left -= stick_speed
+
+    # отрисовка поля
+    pygame.draw.circle(screen, pygame.Color("green"), ball.center, ball_radius)
+    pygame.draw.rect(screen, pygame.Color("darkorange"), stick)
+    [pygame.draw.rect(screen, colorz[color], block) for color, block in enumerate(blocks)]
+
+    # движение шарика
+    ball.x += ball_speed * x
+    ball.y += ball_speed * y
+
+    # удар о стены
+    if ball.centerx < ball_radius or ball.centerx > width - ball_radius:
+        x = -x
+    # удар потолок
+    if ball.centery < ball_radius:
+        y = -y
+    # удар о палку
+    if ball.colliderect(stick) and y > 0:
+        x, y = collise(x, y, ball, stick)
+    # удар о блок
+    collision = ball.collidelist(blocks)
+    if collision != -1:
+        col_block = blocks.pop(collision)
+        hit_color = colorz.pop(collision)
+        x, y = collise(x, y, ball, col_block)
+
+    # конец игры
+    if ball.bottom > height:
+        print("GAME OVER(")
+        exit()
+    if len(blocks) == 0:
+        print("THE END!")
+        exit()
+
+    # обновление экрана
+    pygame.display.flip()
